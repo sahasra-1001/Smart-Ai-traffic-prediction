@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Smart AI Traffic Prediction</title>
+<style>
+:root{--bg:#f7f4f2;--card:#fff;--ink:#241a1a;--muted:#6b5c5c;--line:#e4d9d6;--brand:#9b111e;--brand-ink:#fff;--act:#2563eb;--pred:#dc2626;--ok:#16a34a;--mid:#f59e0b;--hi:#dc2626;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171212;--card:#221a1a;--ink:#f3eae8;--muted:#b3a3a0;--line:#3a2d2d;--brand:#e0505c;--brand-ink:#171212;--act:#60a5fa;--pred:#f87171;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#171212;--card:#221a1a;--ink:#f3eae8;--muted:#b3a3a0;--line:#3a2d2d;--brand:#e0505c;--brand-ink:#171212;--act:#60a5fa;--pred:#f87171;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+h1,h2,h3{font-family:Georgia,"Times New Roman",serif;line-height:1.2;margin:0}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+header{border-bottom:4px solid var(--brand);padding:36px 0 28px}
+h1{font-size:clamp(2rem,6vw,3.4rem);letter-spacing:-.01em}
+header p{margin:6px 0 0;color:var(--muted)}
+header .who{color:var(--ink);font-weight:600;margin-top:14px}
+section{padding:36px 0 8px}
+h2{font-size:1.6rem;margin-bottom:6px}
+.lead{color:var(--muted);margin:0 0 16px;max-width:70ch}
+.grid{display:grid;gap:16px}
+.demo{grid-template-columns:minmax(0,1fr) 260px}
+@media(max-width:820px){.demo{grid-template-columns:1fr}}
+.box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
+canvas{width:100%;height:auto;display:block;border-radius:8px;background:#222}
+.counts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 14px}
+.counts div{border-left:5px solid var(--c);padding:2px 10px}
+.counts b{display:block;font:700 1.6rem Georgia,serif}
+.counts span{font-size:.85rem;color:var(--muted)}
+.total{border-top:1px solid var(--line);padding-top:10px;font-weight:600;display:flex;justify-content:space-between}
+.ctl{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;align-items:center}
+button{font:inherit;font-weight:600;background:var(--brand);color:var(--brand-ink);border:0;border-radius:6px;padding:8px 14px;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--act);outline-offset:2px}
+label{font-size:.95rem;color:var(--muted);display:flex;gap:6px;align-items:center}
+.note{font-size:.85rem;color:var(--muted);margin:10px 0 0}
+.fc{grid-template-columns:minmax(0,1fr) 260px}
+@media(max-width:820px){.fc{grid-template-columns:1fr}}
+input[type=range]{width:100%}
+.lights{display:flex;gap:10px;margin:12px 0}
+.lights i{width:30px;height:30px;border-radius:50%;opacity:.2;border:2px solid var(--line);transition:opacity .2s}
+.lights i.on{opacity:1}
+.lvl{font:700 1.5rem Georgia,serif}
+.kv{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding:4px 0;font-size:.95rem}
+.flow{display:flex;flex-wrap:wrap;gap:8px;list-style:none;padding:0;margin:0;counter-reset:s}
+.flow li{counter-increment:s;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:.92rem}
+.flow li::before{content:counter(s);display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;border-radius:50%;background:var(--brand);color:var(--brand-ink);font-size:.75rem;margin-right:8px;font-weight:700}
+.flow small{display:block;color:var(--muted);margin-left:30px}
+.cards{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.cards h3{font-size:1.15rem;margin-bottom:8px;color:var(--brand)}
+ul{margin:0;padding-left:20px}
+li{margin:3px 0}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tags span{border:1px solid var(--line);border-radius:99px;padding:2px 12px;font-size:.88rem;background:var(--bg)}
+footer{margin-top:40px;border-top:1px solid var(--line);padding:20px 0 32px;color:var(--muted);font-size:.9rem}
+.bar{height:10px;border-radius:5px;background:var(--line);margin:8px 0}.bar i{display:block;height:100%;border-radius:5px;background:var(--brand)}.best{border:2px solid var(--ok)}.badge{display:inline-block;background:var(--ok);color:#fff;border-radius:99px;padding:0 10px;font-size:.8rem;font-weight:700;margin-left:8px}select{font:inherit;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 8px}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>Smart AI Traffic Prediction</h1>
+<p>Vehicle detection with YOLOv8, tracking with ByteTrack, and short-term congestion forecasting with an LSTM, all from roadside video.</p>
+<p class="who">Ravada Sai Sahasra · Guide: Dr. Nichenametla Rajesh</p>
+<p>Department of CSE-2, KL University (Deemed to be University), Vaddeswaram, A.P.</p>
+</div></header>
+
+<main class="wrap">
+<section aria-labelledby="d">
+<h2 id="d">Live detection demo</h2>
+<p class="lead">Vehicles cross a virtual counting line. Each one gets a bounding box, a class, a confidence score and a track ID, and the counts update as it passes.</p>
+<div class="grid demo">
+<div class="box"><canvas id="road" width="800" height="400" aria-label="Simulated roadside video with bounding boxes around vehicles"></canvas>
+<div class="ctl"><button id="pp" type="button">Pause</button><label>Traffic load <select id="ld"><option value="1">Light</option><option value=".6">Moderate</option><option value=".3">Heavy</option></select></label><label><input id="bx" type="checkbox" checked> Show bounding boxes</label><label><input id="lb" type="checkbox" checked> Show labels</label></div>
+<p class="note">This is a simulated scene that shows how the pipeline’s output looks. It does not run the YOLOv8 model in the browser.</p></div>
+<div class="box"><h3 style="margin-bottom:12px">Vehicle counts</h3>
+<div class="counts">
+<div style="--c:#22c55e"><b id="c-car">0</b><span>Car</span></div>
+<div style="--c:#f59e0b"><b id="c-bus">0</b><span>Bus</span></div>
+<div style="--c:#ef4444"><b id="c-truck">0</b><span>Truck</span></div>
+<div style="--c:#3b82f6"><b id="c-bike">0</b><span>Bike</span></div></div>
+<div class="total"><span>Total</span><span id="c-tot">0</span></div>
+<p class="note">Counts are saved every 5 minutes as traffic data for the LSTM.</p>
+<h3 style="margin:18px 0 8px">Congestion on this road</h3>
+<div class="kv"><span>Vehicles in view</span><b id="m-n">0</b></div>
+<div class="kv"><span>Average speed</span><b id="m-sp">–</b></div>
+<div class="kv"><span>Congestion</span><b id="m-lv">–</b></div>
+<div class="kv"><span>Time for 2 km</span><b id="m-tt">–</b></div>
+<div class="kv"><span>Delay vs free flow</span><b id="m-dl">–</b></div>
+<p class="note">Speed comes from the tracked vehicle IDs. Free flow is 50 km/h. Change the traffic load to watch the travel time grow.</p></div>
+</div>
+</section>
+
+<section aria-labelledby="f">
+<h2 id="f">Congestion forecast</h2>
+<p class="lead">The LSTM learns from vehicle counts at fixed 5-minute intervals and predicts the next interval’s volume. Move the slider to see the predicted congestion level.</p>
+<div class="grid fc">
+<div class="box"><canvas id="chart" width="800" height="340" aria-label="Line chart of actual versus predicted traffic volume over 100 minutes"></canvas>
+<p class="note">Sample series for illustration: actual and LSTM-predicted traffic volume against time.</p></div>
+<div class="box"><h3>Predicted level</h3>
+<div class="lights" aria-hidden="true"><i style="background:var(--ok)" id="l0"></i><i style="background:var(--mid)" id="l1"></i><i style="background:var(--hi)" id="l2"></i></div>
+<div class="lvl" id="lvl" aria-live="polite">Low</div>
+<p style="margin:12px 0 4px"><label for="t" style="display:block">Time in minutes: <b id="tv" style="margin-left:4px;color:var(--ink)">50</b></label></p>
+<input id="t" type="range" min="0" max="20" value="10">
+<div class="kv"><span>Actual volume</span><b id="av"></b></div>
+<div class="kv"><span>Predicted volume</span><b id="pv"></b></div>
+<div class="kv"><span>Low / Medium / High</span><span>&lt;70 / &lt;130 / 130+</span></div>
+</div></div>
+</section>
+
+<section aria-labelledby="r">
+<h2 id="r">Route advisor</h2>
+<p class="lead">Counting vehicles is only the input. What a driver needs is how long the trip will take and whether another road is faster. This uses the time you pick on the forecast slider above.</p>
+<div class="box"><p id="adv" style="font:700 1.2rem Georgia,serif;margin:0 0 4px" aria-live="polite"></p><div id="rt" class="grid cards" style="margin-top:12px"></div>
+<p class="note">Travel time = route length ÷ expected speed. Expected speed falls as the predicted traffic volume approaches the road’s capacity. Routes B and C carry a share of the monitored road’s volume. These are illustrative values, not measured data.</p></div>
+</section>
+
+<section aria-labelledby="p">
+<h2 id="p">How the system works</h2>
+<p class="lead">Nine stages take raw road video to a congestion estimate.</p>
+<ol class="flow">
+<li>Roadside video input<small>CCTV / road</small></li>
+<li>Frame preprocessing<small>OpenCV: 1 frame/second, resize, normalize</small></li>
+<li>Vehicle detection<small>YOLOv8: class, confidence, box</small></li>
+<li>Vehicle tracking<small>ByteTrack assigns IDs</small></li>
+<li>Vehicle counting<small>Car, bus, truck, bike</small></li>
+<li>Traffic data generation<small>Counts every 5 min, CSV</small></li>
+<li>Short-term forecasting<small>LSTM predicts next volume</small></li>
+<li>Congestion estimation<small>Low, medium or high</small></li>
+<li>Visualization<small>Graphs and analysis</small></li>
+</ol>
+</section>
+
+<section aria-labelledby="a">
+<h2 id="a" style="margin-bottom:14px">Project details</h2>
+<div class="grid cards">
+<div class="box"><h3>Problem</h3><p style="margin:0">Traffic monitoring still relies on manual observation or static sensors, which lack real-time analysis and the ability to predict what happens next.</p></div>
+<div class="box"><h3>Objectives</h3><ul><li>Detect and classify vehicles from roadside video</li><li>Count and track vehicles accurately</li><li>Estimate traffic flow, volume and density</li><li>Predict short-term traffic conditions</li><li>Build a prototype for real-time analysis</li></ul></div>
+<div class="box"><h3>Dataset</h3><ul><li>Roadside CCTV / traffic video, 1920 × 1080</li><li>Car, bus, truck and bike classes</li><li>Frames extracted at fixed intervals</li><li>Annotated in YOLO format</li></ul></div>
+<div class="box"><h3>Technologies</h3><div class="tags"><span>Python</span><span>OpenCV</span><span>YOLOv8</span><span>TensorFlow (LSTM)</span><span>Flask (prototype)</span><span>HTML / CSS / JS</span><span>Pandas</span><span>Matplotlib</span><span>NumPy</span><span>VS Code</span></div></div>
+<div class="box"><h3>Key outcomes</h3><ul><li>Accurate vehicle detection and classification with YOLOv8</li><li>Reliable counting and traffic volume estimation</li><li>Effective short-term forecasting with an LSTM</li><li>Estimates of traffic density and congestion levels</li></ul></div>
+<div class="box"><h3>Limitations</h3><ul><li>Accuracy drops in rain, fog or low light</li><li>Occlusion and heavy traffic affect tracking</li><li>Data limited to specific locations and vehicle types</li><li>Speed estimation is approximate</li><li>Real-time use needs better hardware</li></ul></div>
+<div class="box"><h3>Future direction</h3><ul><li>More diverse datasets and road conditions</li><li>DeepSORT or StrongSORT for tracking</li><li>Speed and lane-wise analysis</li><li>GRU or Transformer for longer horizons</li><li>Incident detection and adaptive signal control</li></ul></div>
+<div class="box"><h3>Conclusion</h3><p style="margin:0">Combining deep learning detection with time-series forecasting gives a working approach to real-time traffic monitoring and short-term congestion prediction, which can support proactive traffic management and road safety in smart cities.</p></div>
+</div>
+</section>
+</main>
+<footer><div class="wrap">Built from the project poster. Guide: Dr. Nichenametla Rajesh, Department of CSE-2, Koneru Lakshmaiah Education Foundation.</div></footer>
+
+<script>
+(function(){
+var cs=function(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()};
+/* ---------- road simulation ---------- */
+var cv=document.getElementById('road'),cx=cv.getContext('2d'),W=800,H=400,LX=420;
+var T={car:{w:54,h:28,c:'#22c55e',n:'car'},bus:{w:104,h:34,c:'#f59e0b',n:'bus'},truck:{w:90,h:34,c:'#ef4444',n:'truck'},bike:{w:28,h:16,c:'#3b82f6',n:'bike'}};
+var lanes=[{y:70,d:1},{y:130,d:1},{y:230,d:-1},{y:290,d:-1}];
+var LF=1,SR=.45,avg=50,cnt={car:0,bus:0,truck:0,bike:0},vs=[],id=0,paused=false,last=0,acc=0;
+var paint=['#e5e7eb','#1e3a8a','#7c2d12','#374151','#fbbf24','#be123c','#0f766e'];
+function pick(){var r=Math.random();return r<.55?'car':r<.7?'bus':r<.85?'truck':'bike'}
+function spawn(){
+ var l=lanes[Math.floor(Math.random()*4)],k=pick(),t=T[k],sp=(70+Math.random()*60)*l.d*LF;
+ var x=l.d>0?-t.w:W+t.w;
+ for(var i=0;i<vs.length;i++){var o=vs[i];if(o.l===l&&Math.abs(o.x-x)<150)return}
+ vs.push({k:k,l:l,x:x,y:l.y+(60-t.h)/2-8,sp:sp,body:paint[Math.floor(Math.random()*paint.length)],conf:(.8+Math.random()*.17).toFixed(2),id:++id,done:false});
+}
+function draw(){
+ cx.fillStyle='#2b2f36';cx.fillRect(0,0,W,H);
+ cx.fillStyle='#3a3f47';cx.fillRect(0,50,W,150);cx.fillRect(0,210,W,150);
+ cx.fillStyle='#4b5160';cx.fillRect(0,200,W,10);
+ cx.strokeStyle='#cbd5e1';cx.lineWidth=2;cx.setLineDash([22,18]);
+ [120,280].forEach(function(y){cx.beginPath();cx.moveTo(0,y);cx.lineTo(W,y);cx.stroke()});
+ cx.setLineDash([]);
+ cx.strokeStyle='#fbbf24';cx.lineWidth=3;cx.setLineDash([10,8]);cx.beginPath();cx.moveTo(LX,50);cx.lineTo(LX,360);cx.stroke();cx.setLineDash([]);
+ cx.fillStyle='#fbbf24';cx.font='600 12px system-ui';cx.fillText('Counting line',LX+8,44);
+ var sb=document.getElementById('bx').checked,sl=document.getElementById('lb').checked;
+ vs.forEach(function(v){
+  var t=T[v.k];
+  cx.fillStyle=v.body;cx.beginPath();cx.roundRect?cx.roundRect(v.x,v.y,t.w,t.h,v.k==='bike'?8:6):cx.rect(v.x,v.y,t.w,t.h);cx.fill();
+  cx.fillStyle='rgba(0,0,0,.35)';cx.fillRect(v.x+(v.sp>0?t.w*.62:t.w*.08),v.y+3,t.w*.28,t.h-6);
+  if(sb){
+   cx.strokeStyle=t.c;cx.lineWidth=2.5;cx.strokeRect(v.x-4,v.y-4,t.w+8,t.h+8);
+   if(sl){var s=t.n+' '+v.conf+' #'+v.id;cx.font='600 12px system-ui';var w=cx.measureText(s).width+8;
+    cx.fillStyle=t.c;cx.fillRect(v.x-4,v.y-22,w,18);cx.fillStyle='#111';cx.fillText(s,v.x,v.y-9)}
+  }
+ });
+}
+function upd(){
+ var tot=0;for(var k in cnt){document.getElementById('c-'+k).textContent=cnt[k];tot+=cnt[k]}
+ document.getElementById('c-tot').textContent=tot;
+}
+function metrics(dt){
+ var n=0,s=0;vs.forEach(function(v){if(v.x>0&&v.x<W){n++;s+=Math.abs(v.sp)*.5}});
+ if(n)avg+=(s/n-avg)*Math.min(1,dt*1.5);
+ var r=avg/50,l=r>.75?0:r>.45?1:2,tt=2/Math.max(avg,5)*60,dl=Math.max(0,tt-2.4);
+ var e=document.getElementById('m-lv');
+ document.getElementById('m-n').textContent=n;
+ document.getElementById('m-sp').textContent=avg.toFixed(0)+' km/h';
+ e.textContent=['Low','Medium','High'][l];e.style.color=['var(--ok)','var(--mid)','var(--hi)'][l];
+ document.getElementById('m-tt').textContent=tt.toFixed(1)+' min';
+ document.getElementById('m-dl').textContent='+'+dl.toFixed(1)+' min';
+}
+function step(ts){
+ var dt=Math.min((ts-last)/1000,.05);last=ts;
+ if(!paused){
+  acc+=dt;if(acc>SR){acc=0;if(Math.random()<.85)spawn()}
+  vs.forEach(function(v){
+   var cxm=v.x+T[v.k].w/2,before=cxm;v.x+=v.sp*dt;cxm=v.x+T[v.k].w/2;
+   if(!v.done&&((before<LX&&cxm>=LX)||(before>LX&&cxm<=LX))){v.done=true;cnt[v.k]++;upd()}
+  });
+  vs=vs.filter(function(v){return v.x>-160&&v.x<W+160});
+  metrics(dt);
+ }
+ draw();requestAnimationFrame(step);
+}
+for(var i=0;i<14;i++){spawn();vs.forEach(function(v){v.x+=Math.random()*20})}
+document.getElementById('ld').onchange=function(){var v=+this.value,p=LF;LF=v;SR=v===1?.45:v>.5?.3:.18;vs.forEach(function(o){o.sp*=v/p})};
+document.getElementById('pp').onclick=function(){paused=!paused;this.textContent=paused?'Resume':'Pause'};
+document.getElementById('bx').onchange=document.getElementById('lb').onchange=function(){if(paused)draw()};
+requestAnimationFrame(function(ts){last=ts;step(ts)});
+
+/* ---------- forecast chart ---------- */
+var fc=document.getElementById('chart'),fx=fc.getContext('2d'),N=21,A=[],P=[];
+for(var i=0;i<N;i++){var a=8+i*8.8+5*Math.sin(i*1.7);A.push(Math.max(0,Math.round(a)));P.push(Math.max(0,Math.round(a*.97-3+4*Math.cos(i*2.1))))}
+var sl=document.getElementById('t');
+function lvl(v){return v<70?0:v<130?1:2}
+function chart(){
+ var w=800,h=340,L=56,R=20,Tp=20,B=48,iw=w-L-R,ih=h-Tp-B,mx=200;
+ var ink=cs('--ink'),mu=cs('--muted'),ln=cs('--line'),ca=cs('--act'),cp=cs('--pred');
+ fx.clearRect(0,0,w,h);fx.fillStyle=cs('--card');fx.fillRect(0,0,w,h);
+ fx.font='13px system-ui';fx.textAlign='right';fx.fillStyle=mu;fx.strokeStyle=ln;fx.lineWidth=1;
+ for(var g=0;g<=4;g++){var y=Tp+ih-ih*g/4;fx.beginPath();fx.moveTo(L,y);fx.lineTo(w-R,y);fx.stroke();fx.fillText(String(g*50),L-8,y+4)}
+ fx.textAlign='center';
+ for(var j=0;j<N;j+=4){fx.fillText(String(j*5),L+iw*j/(N-1),h-B+20)}
+ fx.fillText('Time (minutes)',L+iw/2,h-8);
+ fx.save();fx.translate(14,Tp+ih/2);fx.rotate(-Math.PI/2);fx.fillText('Vehicle count',0,0);fx.restore();
+ function line(d,c,dash){fx.strokeStyle=c;fx.lineWidth=3;fx.setLineDash(dash);fx.beginPath();
+  d.forEach(function(v,i){var x=L+iw*i/(N-1),y=Tp+ih-ih*v/mx;i?fx.lineTo(x,y):fx.moveTo(x,y)});fx.stroke();fx.setLineDash([]);
+  fx.fillStyle=c;d.forEach(function(v,i){fx.beginPath();fx.arc(L+iw*i/(N-1),Tp+ih-ih*v/mx,3.5,0,7);fx.fill()})}
+ line(A,ca,[]);line(P,cp,[8,5]);
+ var s=+sl.value,sx=L+iw*s/(N-1);
+ fx.strokeStyle=ink;fx.lineWidth=1.5;fx.setLineDash([3,4]);fx.beginPath();fx.moveTo(sx,Tp);fx.lineTo(sx,Tp+ih);fx.stroke();fx.setLineDash([]);
+ fx.textAlign='left';fx.font='600 13px system-ui';
+ fx.fillStyle=ca;fx.fillRect(L+10,Tp+6,18,3);fx.fillText('Actual',L+34,Tp+12);
+ fx.fillStyle=cp;fx.fillRect(L+100,Tp+6,18,3);fx.fillText('Predicted (LSTM)',L+124,Tp+12);
+}
+function show(){
+ var s=+sl.value,p=P[s],l=lvl(p);
+ document.getElementById('tv').textContent=s*5;
+ document.getElementById('av').textContent=A[s];document.getElementById('pv').textContent=p;
+ document.getElementById('lvl').textContent=['Low','Medium','High'][l];
+ for(var i=0;i<3;i++)document.getElementById('l'+i).className=i===l?'on':'';
+ chart();
+}
+var RT=[{n:'Route A',d:'Main road watched by the camera',km:2,ff:50,k:1,o:0},{n:'Route B',d:'Ring road: longer, but lighter traffic',km:2.8,ff:50,k:.5,o:10},{n:'Route C',d:'Market street: shorter, slower limit',km:2.4,ff:40,k:.8,o:0}];
+function routes(){
+ var v=P[+sl.value],m=0,R=RT.map(function(r){var q=v*r.k+r.o,f=1/(1+.8*Math.pow(q/100,3)),sp=r.ff*f;return{r:r,sp:sp,t:r.km/sp*60,free:r.km/r.ff*60}});
+ R.forEach(function(x){m=Math.max(m,x.t)});
+ var b=R[0];R.forEach(function(x){if(x.t<b.t)b=x});
+ document.getElementById('rt').innerHTML=R.map(function(x){return '<div class="box'+(x===b?' best':'')+'"><h3>'+x.r.n+(x===b?'<span class="badge">Fastest</span>':'')+'</h3><p style="margin:0;color:var(--muted);font-size:.9rem">'+x.r.d+' · '+x.r.km+' km</p><div class="bar"><i style="width:'+Math.round(x.t/m*100)+'%"></i></div><div class="kv"><span>Travel time</span><b>'+x.t.toFixed(1)+' min</b></div><div class="kv"><span>Expected speed</span><b>'+x.sp.toFixed(0)+' km/h</b></div><div class="kv"><span>Delay vs free flow</span><b>+'+Math.max(0,x.t-x.free).toFixed(1)+' min</b></div></div>'}).join('');
+ var a=R[0],lv=['low','medium','high'][lvl(v)];
+ document.getElementById('adv').textContent=b===a?'At minute '+sl.value*5+', congestion on Route A is '+lv+' and the trip takes '+a.t.toFixed(1)+' min. Stay on Route A.':'At minute '+sl.value*5+', congestion on Route A is '+lv+' and the trip takes '+a.t.toFixed(1)+' min. Take '+b.r.n+' instead and save '+(a.t-b.t).toFixed(1)+' min.';
+}
+var sh=show;show=function(){sh();routes()};
+sl.oninput=show;show();
+if(window.matchMedia)matchMedia('(prefers-color-scheme: dark)').addEventListener('change',show);
+})();
+</script>
+</body>
+</html>
